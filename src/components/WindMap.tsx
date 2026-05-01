@@ -8,11 +8,10 @@ import { ParticleLayer, RasterLayer } from 'weatherlayers-gl';
 import { ClipExtension } from '@deck.gl/extensions';
 import {
   BOUNDS, INITIAL_VIEW_STATE, WIND_PALETTE,
-  EUROPE_BOUNDS, PROTOMAPS_API_KEY, API_KEY_METEO,
+  EUROPE_BOUNDS, PROTOMAPS_API_KEY,
   PARTICLE_COLOR
 } from '@/config/mapConfig';
 import { buildWindTexture } from '@/lib/wind/main';
-import { fetchUVTiff } from '@/lib/wind/UV_TIFF';
 
 // Overlay interleaved — partage le contexte WebGL2 de MapLibre
 function DeckGLOverlay(props: DeckProps) {
@@ -32,7 +31,19 @@ export default function MapEurope() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const [uBuffer, vBuffer] = await fetchUVTiff(API_KEY_METEO, BOUNDS);
+      const res = await fetch('/api/wind');
+      if (!res.ok) throw new Error(`Wind API error: ${res.status}`);
+      const { u, v } = await res.json() as { u: string; v: string };
+
+      function base64ToArrayBuffer(b64: string): ArrayBuffer {
+        const binaryStr = atob(b64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      const uBuffer = base64ToArrayBuffer(u);
+      const vBuffer = base64ToArrayBuffer(v);
       const { image, imageUnscale, speedMax } = await buildWindTexture([uBuffer, vBuffer]);
       setSpeedMax(speedMax);
       if (cancelled) return;

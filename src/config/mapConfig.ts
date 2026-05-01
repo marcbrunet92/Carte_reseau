@@ -29,18 +29,16 @@ export const GRID_ROWS = 20;
 export const PARTICLE_COLOR: [number, number, number, number] = [255, 255, 255, 200];
 
 // Palette pour le fond raster (vitesse du vent)
+// Inspirée de l'échelle de Beaufort : calme → tempête
 export const WIND_PALETTE: [number, string][] = [
-  [0,    '#0d47a1'],  // calme — bleu très foncé
-  [0.05, '#1565c0'],
-  [0.1,  '#1976d2'],
-  [0.15, '#1e88e5'],
-  [0.2,  '#42a5f5'],  // légère brise — bleu clair
-  [0.3,  '#4db6ac'],  // vert-bleu
-  [0.4,  '#66bb6a'],  // vert
-  [0.5,  '#d4e157'],  // jaune-vert
-  [0.6,  '#ffee58'],  // jaune
-  [0.7,  '#ffa726'],  // orange
-  [0.8,  '#ef5350'],  // rouge
-  [0.9,  '#b71c1c'],
-  [1.0,  '#4a148c'],  // violet — vents violents
+  [0,    '#f0f9e8'],  // calme — blanc cassé
+  [0.1,  '#ccebc5'],  // très faible brise — vert très pâle
+  [0.2,  '#7bccc4'],  // faible brise — turquoise pâle
+  [0.3,  '#2b8cbe'],  // brise modérée — bleu vif
+  [0.4,  '#045a8d'],  // brise fraîche — bleu marine
+  [0.5,  '#f7dc6f'],  // vent fort — jaune
+  [0.6,  '#f39c12'],  // grand vent — orange
+  [0.7,  '#e74c3c'],  // tempête — rouge
+  [0.85, '#8e44ad'],  // violente tempête — violet
+  [1.0,  '#2c0047'],  // ouragan — violet très foncé
 ];
