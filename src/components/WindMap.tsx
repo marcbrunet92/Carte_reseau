@@ -11,7 +11,6 @@ import {
   EUROPE_BOUNDS, PROTOMAPS_API_KEY,
   PARTICLE_COLOR
 } from '@/config/mapConfig';
-import { buildWindTexture } from '@/lib/wind/main';
 
 // Overlay interleaved — partage le contexte WebGL2 de MapLibre
 function DeckGLOverlay(props: DeckProps) {
@@ -33,22 +32,24 @@ export default function MapEurope() {
     async function load() {
       const res = await fetch('/api/wind');
       if (!res.ok) throw new Error(`Wind API error: ${res.status}`);
-      const { u, v } = await res.json() as { u: string; v: string };
+      const { rgba: rgbaB64, width, height, imageUnscale: unscale, speedMax: sMax } =
+        await res.json() as {
+          rgba: string;
+          width: number;
+          height: number;
+          imageUnscale: [number, number];
+          speedMax: number;
+        };
 
-      function base64ToArrayBuffer(b64: string): ArrayBuffer {
-        const binaryStr = atob(b64);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        return bytes.buffer;
-      }
+      const binaryStr = atob(rgbaB64);
+      const bytes = new Uint8ClampedArray(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+      const image = new ImageData(bytes, width, height);
 
-      const uBuffer = base64ToArrayBuffer(u);
-      const vBuffer = base64ToArrayBuffer(v);
-      const { image, imageUnscale, speedMax } = await buildWindTexture([uBuffer, vBuffer]);
-      setSpeedMax(speedMax);
       if (cancelled) return;
+      setSpeedMax(sMax);
       setWindImage(image);
-      setImageUnscale(imageUnscale);
+      setImageUnscale(unscale);
       setStatus('ok');
     }
     load().catch(err => {

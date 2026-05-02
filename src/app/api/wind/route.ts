@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { fetchUVTiff } from "@/lib/wind/UV_TIFF";
+import { computeWindRGBA } from "@/lib/wind/main";
 import { API_KEY_METEO, BOUNDS } from "@/config/mapConfig";
 
 const CACHE_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 interface WindCache {
-  u: string; // base64
-  v: string; // base64
+  rgba: string;  // base64
+  width: number;
+  height: number;
+  imageUnscale: [number, number];
+  speedMax: number;
   cachedAt: number;
 }
 
@@ -26,17 +30,19 @@ export async function GET() {
   const now = Date.now();
 
   if (cache && now - cache.cachedAt < CACHE_TTL_MS) {
-    return NextResponse.json({ u: cache.u, v: cache.v });
+    const { cachedAt: _cachedAt, ...payload } = cache;
+    return NextResponse.json(payload);
   }
 
   try {
     const [uBuffer, vBuffer] = await fetchUVTiff(API_KEY_METEO, BOUNDS);
-    const u = arrayBufferToBase64(uBuffer);
-    const v = arrayBufferToBase64(vBuffer);
+    const { rgba, width, height, imageUnscale, speedMax } = await computeWindRGBA([uBuffer, vBuffer]);
 
-    cache = { u, v, cachedAt: now };
+    const rgbaB64 = arrayBufferToBase64(rgba.buffer);
 
-    return NextResponse.json({ u, v });
+    cache = { rgba: rgbaB64, width, height, imageUnscale, speedMax, cachedAt: now };
+
+    return NextResponse.json({ rgba: rgbaB64, width, height, imageUnscale, speedMax });
   } catch (err) {
     console.error("Wind API fetch failed:", err);
     return NextResponse.json(

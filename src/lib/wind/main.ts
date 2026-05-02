@@ -1,14 +1,26 @@
 import { fromArrayBuffer, TypedArray } from "geotiff";
 
+export type WindRGBAResult = {
+  rgba: Uint8ClampedArray;
+  width: number;
+  height: number;
+  imageUnscale: [number, number];
+  speedMax: number;
+};
+
 export type WindTextureResult = {
   image: ImageData;
   imageUnscale: [number, number];
   speedMax: number;
 };
 
-export async function buildWindTexture(
+/**
+ * Compute the RGBA wind texture from U/V GeoTIFF buffers.
+ * Pure computation — no DOM API, safe to call server-side.
+ */
+export async function computeWindRGBA(
   [uBuffer, vBuffer]: [ArrayBuffer, ArrayBuffer]
-): Promise<WindTextureResult> {
+): Promise<WindRGBAResult> {
   const [tiffU, tiffV] = await Promise.all([
     fromArrayBuffer(uBuffer),
     fromArrayBuffer(vBuffer),
@@ -52,11 +64,17 @@ export async function buildWindTexture(
     rgba[i * 4 + 3] = 255;
   }
 
-  return {
-    image: new ImageData(rgba, width, height),
-    imageUnscale: [WIND_MIN, WIND_MAX],
-    speedMax : WIND_MAX,
-  };
+  return { rgba, width, height, imageUnscale: [WIND_MIN, WIND_MAX], speedMax: WIND_MAX };
+}
+
+/**
+ * Convenience wrapper for client-side use: returns an ImageData directly.
+ */
+export async function buildWindTexture(
+  buffers: [ArrayBuffer, ArrayBuffer]
+): Promise<WindTextureResult> {
+  const { rgba, width, height, imageUnscale, speedMax } = await computeWindRGBA(buffers);
+  return { image: new ImageData(rgba, width, height), imageUnscale, speedMax };
 }
 
 function scale(value: number, min: number, max: number): number {
